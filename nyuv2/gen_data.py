@@ -42,6 +42,7 @@ if __name__ == "__main__":
     #    Generate Training Data     #
     #################################
     print("Generating the training data...")
+    num=0
     for idx in tqdm(split_data['trainNdxs'].flatten()):
         idx = idx-1
         cur_color_map = color_maps[idx]
@@ -64,19 +65,21 @@ if __name__ == "__main__":
         #label_image = rotate_image(label_image)
 
         
-        color_image.save(f"train/images/train_img_{idx}.png")
-        np.save(f"train/label_depth/depth_{idx}.npy", depth_image)
-        depth_image = np.load(f"train/label_depth/depth_{idx}.npy")
+        color_image.save(f"train/images/train_img_{num}.png")
+        np.save(f"train/label_depth/depth_{num}.npy", depth_image)
+        depth_image = np.load(f"train/label_depth/depth_{num}.npy")
 
         #plt.imshow(depth_image)
         #plt.show()
-        np.save(f"train/label_semantic_seg/semantic_seg_{idx}.npy", label_image)     
+        np.save(f"train/label_semantic_seg/semantic_seg_{num}.npy", label_image)     
+        num+=1
 
 
     #################################
     #       Generate Val Data       #
     #################################
     print("Generating the val data...")
+    num=0
     for idx in tqdm(split_data['testNdxs'].flatten()):
         idx = idx-1
         cur_color_map = color_maps[idx]
@@ -99,13 +102,14 @@ if __name__ == "__main__":
         #label_image = rotate_image(label_image)
 
         
-        color_image.save(f"val/images/train_img_{idx}.png")
-        np.save(f"val/label_depth/depth_{idx}.npy", depth_image)
-        depth_image = np.load(f"val/label_depth/depth_{idx}.npy")
+        color_image.save(f"val/images/train_img_{num}.png")
+        np.save(f"val/label_depth/depth_{num}.npy", depth_image)
+        depth_image = np.load(f"val/label_depth/depth_{num}.npy")
 
         #plt.imshow(depth_image)
         #plt.show()
-        np.save(f"val/label_semantic_seg/semantic_seg_{idx}.npy", label_image)     
+        np.save(f"val/label_semantic_seg/semantic_seg_{num}.npy", label_image)     
+        num+=1
 
 
 
