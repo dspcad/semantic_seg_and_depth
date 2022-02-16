@@ -15,23 +15,27 @@ from torchmetrics import JaccardIndex
 if __name__ == "__main__":
 
     transform_train = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
-    nyu_v2_train = NyuV2Dataset("/home/hhwu/project/semantic_seg_and_depth/nyuv2/train/", "/home/hhwu/project/semantic_seg_and_depth/nyuv2/label_depth/", "/home/hhwu/project/semantic_seg_and_depth/nyuv2/label_semantic_seg/",transform=transform_train)
+    train_data_path = "/home/hhwu/project/semantic_seg_and_depth/nyuv2/train/"
+    nyu_v2_train = NyuV2Dataset(train_data_path+"images/", train_data_path+"label_depth/", train_data_path+"label_semantic_seg/",transform=transform_train)
+    nyu_v2_train_sampler = torch.utils.data.RandomSampler(nyu_v2_train)
 
-    train_set, val_set = torch.utils.data.random_split(nyu_v2_train, [794,655], generator=torch.Generator().manual_seed(42))
-    nyu_v2_train_sampler = torch.utils.data.RandomSampler(train_set)
+
+    val_data_path = "/home/hhwu/project/semantic_seg_and_depth/nyuv2/val/"
+    nyu_v2_val = NyuV2Dataset(val_data_path+"images/", train_data_path+"label_depth/", train_data_path+"label_semantic_seg/",transform=transform_train)
+
 
 
     batch_size = 2
     distributed = False
     save_path = "/home/hhwu/project/semantic_seg_and_depth/saved_model/"
-    nyu_v2_train_dataloader = DataLoader(train_set, batch_size=batch_size, shuffle=False, sampler=nyu_v2_train_sampler, num_workers=8)
-    nyu_v2_val_dataloader = DataLoader(val_set, batch_size=8, shuffle=False, num_workers=8)
+    nyu_v2_train_dataloader = DataLoader(nyu_v2_train, batch_size=batch_size, shuffle=False, sampler=nyu_v2_train_sampler, num_workers=8)
+    nyu_v2_val_dataloader = DataLoader(nyu_v2_val, batch_size=8, shuffle=False, num_workers=8)
 
 
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    #model = torchvision.models.segmentation.fcn_resnet50(pretrained=False, num_classes=41).to(device)
-    model = torchvision.models.segmentation.deeplabv3_resnet50(pretrained=False, num_classes=41).to(device)
+    model = torchvision.models.segmentation.fcn_resnet50(pretrained=False, num_classes=41).to(device)
+    #model = torchvision.models.segmentation.deeplabv3_resnet50(pretrained=False, num_classes=41).to(device)
     print(model)
 
     
