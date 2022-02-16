@@ -94,11 +94,11 @@ if __name__ == "__main__":
         color_image = Image.fromarray(cur_color_map, mode='RGB')
         color_image = rotate_image(color_image)
 
-        depth_image = depth_maps[idx].T
+        depth_image = np.rot90(depth_maps[idx],3)
         #plt.imshow(cur_depth_map.T)
         #plt.show()
 
-        label_image = label_maps[idx].T
+        label_image = np.rot90(label_maps[idx],3)
         h, w = label_image.shape
         #print(f"h: {h}   w: {w}")
         for i in range(h):
