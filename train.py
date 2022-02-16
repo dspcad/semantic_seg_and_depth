@@ -14,31 +14,37 @@ from torchmetrics import JaccardIndex
 
 if __name__ == "__main__":
 
-    transform_train = transforms.Compose([transforms.ToTensor()])
+    transform_train = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     nyu_v2_train = NyuV2Dataset("/home/hhwu/project/semantic_seg_and_depth/nyuv2/train/", "/home/hhwu/project/semantic_seg_and_depth/nyuv2/label_depth/", "/home/hhwu/project/semantic_seg_and_depth/nyuv2/label_semantic_seg/",transform=transform_train)
-    nyu_v2_train_sampler = torch.utils.data.RandomSampler(nyu_v2_train)
+
+    train_set, val_set = torch.utils.data.random_split(nyu_v2_train, [794,655], generator=torch.Generator().manual_seed(42))
+    nyu_v2_train_sampler = torch.utils.data.RandomSampler(train_set)
 
 
-    batch_size = 1
+    batch_size = 2
     distributed = False
     save_path = "/home/hhwu/project/semantic_seg_and_depth/saved_model/"
-    nyu_v2_train_dataloader = DataLoader(nyu_v2_train, batch_size=batch_size, shuffle=False, sampler=nyu_v2_train_sampler, num_workers=8)
-    nyu_v2_val_dataloader = DataLoader(nyu_v2_train, batch_size=8, shuffle=False, num_workers=8)
+    nyu_v2_train_dataloader = DataLoader(train_set, batch_size=batch_size, shuffle=False, sampler=nyu_v2_train_sampler, num_workers=8)
+    nyu_v2_val_dataloader = DataLoader(val_set, batch_size=8, shuffle=False, num_workers=8)
 
 
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = torchvision.models.segmentation.fcn_resnet50(pretrained=False, num_classes=41).to(device)
+    #model = torchvision.models.segmentation.fcn_resnet50(pretrained=False, num_classes=41).to(device)
+    model = torchvision.models.segmentation.deeplabv3_resnet50(pretrained=False, num_classes=41).to(device)
     print(model)
 
     
 
     params = [p for p in model.parameters() if p.requires_grad]
-    learning_rate = 1e-5
-    semantic_seg_optimizer = torch.optim.SGD(params, lr=learning_rate, momentum=0.9, weight_decay=0.0001)
+    learning_rate = 1e-3
+    semantic_seg_optimizer = torch.optim.SGD(params, lr=learning_rate, momentum=0.9, weight_decay=0.001)
     #semantic_seg_optimizer = torch.optim.Adam(params, lr=learning_rate, weight_decay=0.0001)
-    semantic_seg_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(semantic_seg_optimizer, T_max=len(nyu_v2_train_dataloader))
+
+
+    #semantic_seg_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(semantic_seg_optimizer, T_max=len(nyu_v2_train_dataloader))
     #semantic_seg_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(semantic_seg_optimizer, T_max=len(nyu_v2_train_dataloader), eta_min=1e-6)
+    semantic_seg_scheduler = torch.optim.lr_scheduler.MultiStepLR(semantic_seg_optimizer, milestones=[20,60], gamma=0.1)
 
     criterion = torch.nn.CrossEntropyLoss(ignore_index=0) # Set loss function
 
@@ -65,7 +71,7 @@ if __name__ == "__main__":
                 target = target.cuda()
                 global_step = epoch * len(nyu_v2_train_dataloader) + b_seg_idx
                                 
-                target = target.reshape(batch_size,h,w)
+                #target = target.reshape(batch_size,h,w)
                 #save_image(img, f"test_{cnt}.png")
 
                 t_net_0 = time.time()
@@ -81,7 +87,7 @@ if __name__ == "__main__":
                 semantic_seg_optimizer.zero_grad()
                 seg_loss.backward()
                 semantic_seg_optimizer.step()
-                semantic_seg_scheduler.step()
+                #semantic_seg_scheduler.step()
                 t_net_1 = time.time()
 
 
@@ -106,11 +112,11 @@ if __name__ == "__main__":
 
             except StopIteration:
                 depth_data_available = False  # 
-                print('all depth obj detect samples iterated')
+                print(f"Epoch {epoch} is Done.")
                 del nyu_v2_itr
                 break
         
-
+        semantic_seg_scheduler.step()
         if epoch%10==0:
             save_model(model, semantic_seg_optimizer, epoch,save_path, distributed)
 
@@ -125,7 +131,7 @@ if __name__ == "__main__":
                     #print(f"pred: {pred.shape}")
                     #print(f"target: {target.shape}")
                     #print(f"target: {target.shape}   {target[0][i][j]}")
-                    eval_res.update(pred,target)
+                    eval_res(pred,target)
                     
                 print(eval_res.compute())
 
