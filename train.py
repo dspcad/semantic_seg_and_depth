@@ -36,13 +36,13 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = torchvision.models.segmentation.fcn_resnet50(pretrained=False, num_classes=41).to(device)
     #model = torchvision.models.segmentation.deeplabv3_resnet50(pretrained=False, num_classes=41).to(device)
-    print(model)
+    #print(model)
 
     
 
     params = [p for p in model.parameters() if p.requires_grad]
     learning_rate = 1e-3
-    semantic_seg_optimizer = torch.optim.SGD(params, lr=learning_rate, momentum=0.9, weight_decay=0.001)
+    semantic_seg_optimizer = torch.optim.SGD(params, lr=learning_rate, momentum=0.9, weight_decay=0.0001)
     #semantic_seg_optimizer = torch.optim.Adam(params, lr=learning_rate, weight_decay=0.0001)
 
 
@@ -53,8 +53,6 @@ if __name__ == "__main__":
     criterion = torch.nn.CrossEntropyLoss(ignore_index=0) # Set loss function
 
     seg_ave_loss = 0.0
-    h=480
-    w=640
     for epoch in range(101):
         depth_data_available = True
         t_data_0 = time.time()

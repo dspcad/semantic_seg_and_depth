@@ -2,9 +2,12 @@ import numpy as np
 from PIL import Image
 import os, torch
 from torchvision.transforms import transforms
+from torchvision.utils import draw_segmentation_masks
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+
+torch.set_printoptions(profile="full")
 
 class NyuV2Dataset:
     """Python interface for the labeled subset of the NYU dataset.
@@ -59,13 +62,31 @@ class NyuV2Dataset:
 ###########################
 if __name__ == '__main__':
     transform_train = transforms.Compose([transforms.ToTensor()])
-    nyu_v2_train = NyuV2Dataset("/home/hhwu/project/semantic_seg_and_depth/nyuv2/train/", "/home/hhwu/project/semantic_seg_and_depth/nyuv2/label_depth/", "/home/hhwu/project/semantic_seg_and_depth/nyuv2/label_semantic_seg/",transform=transform_train)
+    nyu_v2_train = NyuV2Dataset("/home/hhwu/project/semantic_seg_and_depth/nyuv2/train/images/", "/home/hhwu/project/semantic_seg_and_depth/nyuv2/train/label_depth/", "/home/hhwu/project/semantic_seg_and_depth/nyuv2/train/label_semantic_seg/",transform=transform_train)
 
     nyu_v2_train_sampler = torch.utils.data.RandomSampler(nyu_v2_train)
     nyu_v2_train_dataloader = DataLoader(nyu_v2_train, batch_size=1, shuffle=False, sampler=nyu_v2_train_sampler, num_workers=0)
+    #nyu_v2_train_dataloader = DataLoader(nyu_v2_train, batch_size=1, shuffle=False, num_workers=0)
 
     nyu_v2_progress_bar = tqdm(nyu_v2_train_dataloader)
     nyu_v2_itr = iter(nyu_v2_progress_bar)
 
-    img,label = next(nyu_v2_itr)
+    image,label = next(nyu_v2_itr)
 
+    img = image[0].permute(1,2,0)
+
+    plt.imshow(img)
+    plt.show()
+
+
+    t_img = image[0]
+    t_img = t_img*255
+    for i in range(1,41):
+        bool_mask = label[0] == i
+#        print(bool_mask.shape)
+
+
+        t_img = draw_segmentation_masks(t_img.type(torch.uint8), masks=bool_mask,alpha=0.7)
+
+        plt.imshow(t_img.permute(1,2,0))
+        plt.show()

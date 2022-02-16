@@ -50,16 +50,23 @@ if __name__ == "__main__":
         color_image = Image.fromarray(cur_color_map, mode='RGB')
         color_image = rotate_image(color_image)
 
-        depth_image = depth_maps[idx].T
-        #plt.imshow(cur_depth_map.T)
+
+        #print(depth_maps[idx].shape)
+
+        #plt.imshow(color_image)
+        #plt.show()
+        depth_image = np.rot90(depth_maps[idx],3)
+        #print(depth_image.shape)
+        #plt.imshow(depth_image)
         #plt.show()
 
-        label_image = label_maps[idx].T
+        label_image = np.rot90(label_maps[idx],3)
         h, w = label_image.shape
-        #print(f"h: {h}   w: {w}")
         for i in range(h):
             for j in range(w):
+                #print(f"org: {i},{j}:   {label_image[i][j]}")
                 label_image[i][j] = tbl_40_cls[label_image[i][j]]
+                #print(f"                {label_image[i][j]}")
 
         #label_image = Image.fromarray(cur_label_map, mode='I;16')
         #label_image = rotate_image(label_image)
@@ -67,7 +74,7 @@ if __name__ == "__main__":
         
         color_image.save(f"train/images/train_img_{num}.png")
         np.save(f"train/label_depth/depth_{num}.npy", depth_image)
-        depth_image = np.load(f"train/label_depth/depth_{num}.npy")
+        #depth_image = np.load(f"train/label_depth/depth_{num}.npy")
 
         #plt.imshow(depth_image)
         #plt.show()
@@ -104,7 +111,7 @@ if __name__ == "__main__":
         
         color_image.save(f"val/images/train_img_{num}.png")
         np.save(f"val/label_depth/depth_{num}.npy", depth_image)
-        depth_image = np.load(f"val/label_depth/depth_{num}.npy")
+        #depth_image = np.load(f"val/label_depth/depth_{num}.npy")
 
         #plt.imshow(depth_image)
         #plt.show()
