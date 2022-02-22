@@ -54,24 +54,32 @@ class NyuV2Dataset:
             image        = self.transform(image)
 
         #print(label_image)
-        return image, semantic_seg
+        return image, semantic_seg, depth
 
 
 ###########################
 #     Test the code       #
 ###########################
 if __name__ == '__main__':
-    transform_train = transforms.Compose([transforms.ToTensor()])
-    nyu_v2_train = NyuV2Dataset("/home/hhwu/project/semantic_seg_and_depth/nyuv2/train/images/", "/home/hhwu/project/semantic_seg_and_depth/nyuv2/train/label_depth/", "/home/hhwu/project/semantic_seg_and_depth/nyuv2/train/label_semantic_seg/",transform=transform_train)
+    cls_name = ['unlabeled', 'wall', 'floor', 'cabinet', 'bed', 'chair', 'sofa','table', 'door', 'window', 'bookshelf',
+                'picture', 'counter', 'blinds', 'desk','shelves', 'curtain', 'dresser', 'pillow', 'mirror', 'floor mat',
+                'clothes', 'ceiling', 'books', 'refridgerator', 'television', 'paper', 'towel', 'shower curtain', 'box', 
+                'whiteboard', 'person', 'night stand', 'toilet', 'sink', 'lamp', 'bathtub', 'bag', 'otherstructure', 'otherfurniture', 'otherprop']
 
-    nyu_v2_train_sampler = torch.utils.data.RandomSampler(nyu_v2_train)
-    nyu_v2_train_dataloader = DataLoader(nyu_v2_train, batch_size=1, shuffle=False, sampler=nyu_v2_train_sampler, num_workers=0)
-    #nyu_v2_train_dataloader = DataLoader(nyu_v2_train, batch_size=1, shuffle=False, num_workers=0)
+
+
+    transform_train = transforms.Compose([transforms.ToTensor()])
+    #nyu_v2_train = NyuV2Dataset("/home/hhwu/project/semantic_seg_and_depth/nyuv2/train/images/", "/home/hhwu/project/semantic_seg_and_depth/nyuv2/train/label_depth/", "/home/hhwu/project/semantic_seg_and_depth/nyuv2/train/label_semantic_seg/",transform=transform_train)
+    nyu_v2_train = NyuV2Dataset("/home/hhwu/project/semantic_seg_and_depth/nyuv2/val/images/", "/home/hhwu/project/semantic_seg_and_depth/nyuv2/val/label_depth/", "/home/hhwu/project/semantic_seg_and_depth/nyuv2/val/label_semantic_seg/",transform=transform_train)
+
+    #nyu_v2_train_sampler = torch.utils.data.RandomSampler(nyu_v2_train)
+    #nyu_v2_train_dataloader = DataLoader(nyu_v2_train, batch_size=1, shuffle=False, sampler=nyu_v2_train_sampler, num_workers=0)
+    nyu_v2_train_dataloader = DataLoader(nyu_v2_train, batch_size=1, shuffle=False, num_workers=0)
 
     nyu_v2_progress_bar = tqdm(nyu_v2_train_dataloader)
     nyu_v2_itr = iter(nyu_v2_progress_bar)
 
-    image,label = next(nyu_v2_itr)
+    image,seg_label,depth_label = next(nyu_v2_itr)
 
     img = image[0].permute(1,2,0)
 
@@ -81,12 +89,22 @@ if __name__ == '__main__':
 
     t_img = image[0]
     t_img = t_img*255
-    for i in range(1,41):
-        bool_mask = label[0] == i
-#        print(bool_mask.shape)
+
+    l = set()
+    _, h,w = t_img.shape
+    #for cls in range(41):
+    #    bool_mask = seg_label[0] == cls
+    #    print(cls_name[cls])
+
+    #    #for i in range(h): 
+    #    #    for j in range(w):
+    #    #        if seg_label[0][i][j] == cls:
+    #    #            l.add(cls)
+
+    #    res = draw_segmentation_masks(t_img.type(torch.uint8), masks=bool_mask,alpha=0.9)
+
+    #    plt.imshow(res.permute(1,2,0))
+    #    plt.show()
 
 
-        t_img = draw_segmentation_masks(t_img.type(torch.uint8), masks=bool_mask,alpha=0.7)
-
-        plt.imshow(t_img.permute(1,2,0))
-        plt.show()
+    print(seg_label[0])

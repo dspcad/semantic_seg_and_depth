@@ -31,8 +31,8 @@ if __name__ == "__main__":
     opt.val_label_depth_path        = opt.data_path + 'label_depth/'
 
 
-    transform_train = transforms.Compose([transforms.ToTensor()])
-    #transform_train = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+    #transform_train = transforms.Compose([transforms.ToTensor()])
+    transform_train = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     nyu_v2_val = NyuV2Dataset(opt.val_data_path, opt.val_label_depth_path, opt.val_label_semantic_seg_path,transform=transform_train)
     nyu_v2_val_dataloader = DataLoader(nyu_v2_val, batch_size=8, shuffle=False, num_workers=8)
 
@@ -42,6 +42,7 @@ if __name__ == "__main__":
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = torchvision.models.segmentation.fcn_resnet50(pretrained=False, num_classes=41).to(device)
+    #model = torchvision.models.segmentation.deeplabv3_resnet50(pretrained=False, num_classes=41).to(device)
     model.load_state_dict(torch.load(opt.model_path)['model'])
 
     

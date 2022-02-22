@@ -10,7 +10,7 @@ import time
 from torchvision.utils import save_image
 from utils import save_model
 
-from torchmetrics import JaccardIndex
+from torchmetrics import MeanSquaredError
 
 if __name__ == "__main__":
 
@@ -34,8 +34,8 @@ if __name__ == "__main__":
 
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = torchvision.models.segmentation.fcn_resnet50(pretrained=False, num_classes=41).to(device)
-    #model = torchvision.models.segmentation.deeplabv3_resnet50(pretrained=False, num_classes=41).to(device)
+    model = torchvision.models.segmentation.fcn_resnet50(pretrained=False, num_classes=1).to(device)
+    #model = torchvision.models.segmentation.deeplabv3_resnet50(pretrained=False, num_classes=1).to(device)
     #print(model)
 
     
@@ -50,7 +50,8 @@ if __name__ == "__main__":
     #semantic_seg_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(semantic_seg_optimizer, T_max=len(nyu_v2_train_dataloader), eta_min=1e-6)
     semantic_seg_scheduler = torch.optim.lr_scheduler.MultiStepLR(semantic_seg_optimizer, milestones=[20,60], gamma=0.1)
 
-    criterion = torch.nn.CrossEntropyLoss(ignore_index=0) # Set loss function
+    #criterion = torch.nn.CrossEntropyLoss(ignore_index=0) # Set classification loss function
+    criterion = torch.nn.MSELoss() # Set regression loss function
 
     seg_ave_loss = 0.0
     for epoch in range(101):
@@ -70,21 +71,21 @@ if __name__ == "__main__":
                 img, seg_target, depth_target = next(nyu_v2_itr)
                 t_data_1 = time.time()
                 img = img.cuda()
-                seg_target = seg_target.cuda()
+                depth_target = depth_target.cuda()
                 global_step = epoch * len(nyu_v2_train_dataloader) + b_seg_idx
                                 
                 #target = target.reshape(batch_size,h,w)
                 #save_image(img, f"test_{cnt}.png")
 
                 t_net_0 = time.time()
-                pred = model(img)['out']
+                pred = model(img)['out'].squeeze()
 
                 #print(type(outputs))
                 #print(outputs['out'].shape)
 
                 #print(f"label: {target.shape}")
                 #print(f"pred: {pred.shape}")
-                seg_loss = criterion(pred,seg_target.long())
+                seg_loss = torch.sqrt(criterion(pred,depth_target.float()))
                 #print(seg_loss.item())
                 semantic_seg_optimizer.zero_grad()
                 seg_loss.backward()
@@ -123,17 +124,18 @@ if __name__ == "__main__":
             save_model(model, semantic_seg_optimizer, epoch,save_path, distributed)
 
             model.eval()
-            eval_res = JaccardIndex(num_classes=41, ignore_index=0).cuda()
+            #eval_res = JaccardIndex(num_classes=41, ignore_index=0).cuda()
+            eval_res = MeanSquaredError(squared=False).cuda()
             with torch.no_grad():
                 for img, seg_target, depth_target in tqdm(nyu_v2_val_dataloader):
                     img = img.cuda()
-                    seg_target = seg_target.cuda()
-                    pred = model(img)['out']
+                    depth_target = depth_target.cuda()
+                    pred = model(img)['out'].squeeze()
 
                     #print(f"pred: {pred.shape}")
                     #print(f"target: {target.shape}")
                     #print(f"target: {target.shape}   {target[0][i][j]}")
-                    eval_res(pred,seg_target)
+                    eval_res(pred,depth_target)
                     
                 print(eval_res.compute())
 
